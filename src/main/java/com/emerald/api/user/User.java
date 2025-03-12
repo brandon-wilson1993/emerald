@@ -8,7 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "\"user\"") // user is keyword and causes issues
+@Table(name = "users") // user is keyword and causes issues
 public class User {
 
     @Id
