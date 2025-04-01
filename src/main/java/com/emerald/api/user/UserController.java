@@ -1,7 +1,7 @@
 package com.emerald.api.user;
 
 import java.util.List;
-
+import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
 public class UserController {
@@ -33,9 +35,13 @@ public class UserController {
     }
 
     @GetMapping("/users/{id}")
-    public User getSpecificUser(@PathVariable Long id) {
+    public EntityModel<User> getSpecificUser(@PathVariable Long id) {
 
-        return repository.findById(id).orElseThrow();
+        User user = repository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+
+        return EntityModel.of(user,
+            linkTo(methodOn(UserController.class).getSpecificUser(id)).withSelfRel(),
+            linkTo(methodOn(UserController.class).getAllUsers()).withRel("user"));
     }
 
     @PostMapping("/users")
