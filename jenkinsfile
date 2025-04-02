@@ -1,12 +1,10 @@
+/* Requires the Docker Pipeline plugin */
 pipeline {
-    agent {
-        docker { image 'docker:dind' }
-    }
-
+    agent { docker { image 'maven:3.9.9-eclipse-temurin-21-alpine' } }
     stages {
-        stage('Test') {
+        stage('build') {
             steps {
-                sh 'docker compose up'
+                sh 'mvn --version'
             }
         }
     }
