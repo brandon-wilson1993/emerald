@@ -4,8 +4,7 @@ pipeline {
     stages {
         stage('compose') {
             steps {
-                sh 'ls',
-                sh 'docker compose up'
+                sh 'ls'
             }     
         }
     }
