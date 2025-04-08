@@ -1,6 +1,9 @@
 package com.emerald.api.user;
 
 import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,50 +18,59 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @RestController
 public class UserController {
 
-    private final UserRepository repository;
+  private final UserModelAssembler userModelAssembler;
+  private final UserRepository repository;
 
-    public UserController(UserRepository repository) {
+  public UserController(UserRepository repository, UserModelAssembler userModelAssembler) {
 
-        this.repository = repository;
-    }
+    this.repository = repository;
+    this.userModelAssembler = userModelAssembler;
+  }
 
-    @DeleteMapping("/users/{id}")
-    public void deleteUser(@PathVariable Long id) {
+  @DeleteMapping("/users/{id}")
+  public void deleteUser(@PathVariable Long id) {
 
-        repository.deleteById(id);
-    }
+    repository.deleteById(id);
+  }
 
-    @GetMapping("/users")
-    public List<User> getAllUsers() {
+  @GetMapping("/users")
+  public CollectionModel<EntityModel<User>> getAllUsers() {
 
-        return repository.findAll();
-    }
+    List<EntityModel<User>> users =
+        repository.findAll().stream().map(userModelAssembler::toModel).collect(Collectors.toList());
 
-    @GetMapping("/users/{id}")
-    public EntityModel<User> getSpecificUser(@PathVariable Long id) {
+    return CollectionModel.of(
+        users, linkTo(methodOn(UserController.class).getAllUsers()).withSelfRel());
+  }
 
-        User user = repository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+  @GetMapping("/users/{id}")
+  public EntityModel<User> getSpecificUser(@PathVariable Long id) {
 
-        return EntityModel.of(user,
-            linkTo(methodOn(UserController.class).getSpecificUser(id)).withSelfRel(),
-            linkTo(methodOn(UserController.class).getAllUsers()).withRel("user"));
-    }
+    User user = repository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
 
-    @PostMapping("/users")
-    public User createNewUser(@RequestBody User newUser) {
+    return userModelAssembler.toModel(user);
+  }
 
-        return repository.save(newUser);
-    }
+  @PostMapping("/users")
+  public User createNewUser(@RequestBody User newUser) {
 
-    @PutMapping("/users/{id}")
-    public User replaceUser(@RequestBody User newUser, @PathVariable Long id) {
+    return repository.save(newUser);
+  }
 
-        return repository.findById(id).map(user -> {
-            user.setEmailAddress(newUser.getEmailAddress());
-            user.setName(newUser.getName());
-            return repository.save(user);
-        }).orElseGet(() -> {
-            return repository.save(newUser);
-        });
-    }
+  @PutMapping("/users/{id}")
+  public User replaceUser(@RequestBody User newUser, @PathVariable Long id) {
+
+    return repository
+        .findById(id)
+        .map(
+            user -> {
+              user.setEmailAddress(newUser.getEmailAddress());
+              user.setName(newUser.getName());
+              return repository.save(user);
+            })
+        .orElseGet(
+            () -> {
+              return repository.save(newUser);
+            });
+  }
 }
